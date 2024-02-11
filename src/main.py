@@ -5,6 +5,7 @@ import time
 
 import requests
 from dotenv import load_dotenv
+from requests.exceptions import HTTPError, Timeout, TooManyRedirects
 
 from src.utils.dir_paths import INPUTS_DIR, OUTPUTS_DIR
 from src.utils.logger_custom import default_logger as logger
@@ -15,7 +16,6 @@ class UsernameChecker:
     def __init__(self):
         load_dotenv()
         self.TIMEOUT = 5
-        self.amount_usernames_output = 50
         self.discord_url = "https://api.lixqa.de/v3/discord/pomelo"
         self.input_usernames = self._input_usernames
         self.twitter_bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
@@ -33,42 +33,47 @@ class UsernameChecker:
         both_usernames_list = []
         discord_usernames_list = []
 
-        while len(both_usernames_list) < self.amount_usernames_output:
-            for index, username in enumerate(self.input_usernames):
-                logger.info(f"Checking discord username number {index}...")
-                response = self.discord_username_availability(username)
-                if response["data"]["check"]["status"] == 2:
-                    discord_usernames_list.append(username)
-                if index % 2 == 0:
-                    time.sleep(11)
+        for index, username in enumerate(self.input_usernames):
+            logger.info(f"Checking discord username number {index}...")
+            response = self.discord_username_availability(username)
+            if response:
+                discord_usernames_list.append(username)
+            if index % 2 == 0:
+                time.sleep(random.randint(11, 13))
 
-            for index, username in enumerate(discord_usernames_list):
-                logger.info(f"Checking twitter username number {index}...")
-                response = self.twitter_username_availability(username)
-                if response["valid"]:
-                    both_usernames_list.append(username)
-                time.sleep(1)
+        for index, username in enumerate(discord_usernames_list):
+            logger.info(f"Checking twitter username number {index}...")
+            response = self.twitter_username_availability(username)
+            if response:
+                both_usernames_list.append(username)
+            time.sleep(1)
 
-            filename = os.path.join(OUTPUTS_DIR, "valid_usernames.txt")
-            with open(filename, 'w') as file:
-                for username in both_usernames_list:
-                    file.write(username + '\n')
+        filename = os.path.join(OUTPUTS_DIR, "valid_usernames.txt")
+        with open(filename, 'w') as file:
+            for username in both_usernames_list:
+                file.write(username + '\n')
 
-        logger.success(f"Finished checking {self.amount_usernames_output}, saved file")
+        logger.success(f"Finished checking usernames, saved file")
         return both_usernames_list
 
-    def discord_username_availability(self, username: str) -> dict:
+    def discord_username_availability(self, username: str) -> bool:
         try:
             url = f"{self.discord_url}/{username}"
-            response = requests.get(url)
-            response.raise_for_status()
+            response = requests.get(url, timeout=self.TIMEOUT)
 
-            return response.json()
+            if response.json()["data"]["check"]["status"] == 2:
+                return True
+            else:
+                return False
+
+        except (HTTPError, Timeout, TooManyRedirects) as err:
+            logger.error(f"Sleeping a bit, error: {err}")
+            time.sleep(15)
 
         except Exception as err:
-            logger.exception(f"Error: {err}")
+            logger.error(f"Error: {err}")
 
-    def twitter_username_availability(self, username):
+    def twitter_username_availability(self, username) -> bool:
         try:
             user_agent = random.choice(user_agents)
             response = requests.get(
@@ -78,12 +83,20 @@ class UsernameChecker:
                     "x-twitter-active-user": "yes",
                     "x-twitter-client-language": "en",
                     "user-agent": user_agent,
-                }, )
+                }, timeout=self.TIMEOUT
+            )
 
-            return response.json()
+            if response.json()["valid"]:
+                return True
+            else:
+                return False
+
+        except (HTTPError, Timeout, TooManyRedirects) as err:
+            logger.error(f"Sleeping a bit, error: {err}")
+            time.sleep(15)
 
         except Exception as err:
-            logger.exception(f"Error: {err}")
+            logger.error(f"Error: {err}")
 
 
 if __name__ == "__main__":
