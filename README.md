@@ -1,7 +1,7 @@
 ## Discord and Twitter username checker
 
 Simple tool to check if list of usernames (bulk) is available on both Discord and Twitter.  
-
+Apologies that Discord part is a bit slow but IDC to make it faster.
 ___
 
 Discord part uses: https://github.com/Lixqa/DiscordPomelo.  
