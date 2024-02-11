@@ -15,7 +15,7 @@ from src.utils.user_agents import user_agents
 class UsernameChecker:
     def __init__(self):
         load_dotenv()
-        self.TIMEOUT = 5
+        self.TIMEOUT = 7
         self.discord_url = "https://api.lixqa.de/v3/discord/pomelo"
         self.input_usernames = self._input_usernames
         self.twitter_bearer_token = os.getenv("TWITTER_BEARER_TOKEN")
@@ -38,8 +38,9 @@ class UsernameChecker:
             response = self.discord_username_availability(username)
             if response:
                 discord_usernames_list.append(username)
+            time.sleep(1)
             if index % 2 == 0:
-                time.sleep(random.randint(11, 13))
+                time.sleep(random.randint(10, 12))
 
         for index, username in enumerate(discord_usernames_list):
             logger.info(f"Checking twitter username number {index}...")
