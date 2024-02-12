@@ -14,6 +14,7 @@ from src.utils.user_agents import user_agents
 
 class UsernameChecker:
     def __init__(self):
+        # ### Static settings # ###
         load_dotenv()
         self.TIMEOUT = 7
         self.discord_url = "https://api.lixqa.de/v3/discord/pomelo"
@@ -68,11 +69,11 @@ class UsernameChecker:
                 return False
 
         except (HTTPError, Timeout, TooManyRedirects) as err:
-            logger.error(f"Sleeping a bit, error: {err}")
+            logger.error(f"Failed on {username}, sleeping a bit, error: {err}")
             time.sleep(15)
 
         except Exception as err:
-            logger.error(f"Error: {err}")
+            logger.error(f"Failed on {username}, error: {err}")
 
     def twitter_username_availability(self, username) -> bool:
         try:
@@ -93,13 +94,30 @@ class UsernameChecker:
                 return False
 
         except (HTTPError, Timeout, TooManyRedirects) as err:
-            logger.error(f"Sleeping a bit, error: {err}")
+            logger.error(f"Failed on {username}, sleeping a bit, error: {err}")
             time.sleep(15)
 
         except Exception as err:
-            logger.error(f"Error: {err}")
+            logger.error(f"Failed on {username}, error: {err}")
+
+    @staticmethod
+    def shuffle_list() -> None:
+        filename = os.path.join(OUTPUTS_DIR, "valid_usernames.txt")
+        with open(filename, 'r') as file:
+            usernames_list = file.read().split()
+            random.shuffle(usernames_list)
+            usernames_list = list(set(usernames_list))
+
+        with open(filename, 'w') as file:
+            for username in usernames_list:
+                file.write(username + '\n')
 
 
 if __name__ == "__main__":
+    mode = 2
     checker = UsernameChecker()
-    checker.check_usernames_availability_both()
+    if mode == 1:
+        checker.check_usernames_availability_both()
+        checker.shuffle_list()
+    if mode == 2:
+        checker.shuffle_list()
