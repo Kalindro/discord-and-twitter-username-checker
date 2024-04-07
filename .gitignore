@@ -128,10 +128,12 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-#Pycharm
+# Pycharm
 .idea
 
 # Project
+/_logs/*
+!/_logs/.gitkeep
 inputs/*
 !inputs/.gitkeep
 outputs/*
